@@ -11,7 +11,7 @@ if (window.openDatabase) {
 
     //create the cars table using SQL for the database using a transaction
     mydb.transaction(function (t) {
-        t.executeSql("CREATE TABLE IF NOT EXISTS track (id INTEGER PRIMARY KEY ASC, Web TEXT, time TIME)");
+        t.executeSql("CREATE TABLE IF NOT EXISTS tracks (id INTEGER PRIMARY KEY ASC, url TEXT, start TIME, end TIME, timer INTEGER, tabsCount INTEGER)");
     });
 
 
@@ -19,80 +19,51 @@ if (window.openDatabase) {
     alert("WebSQL is not supported by your browser!");
 }
 
-//function to output the list of cars in the database
-/*
- function updateCarList(transaction, results) {
- //initialise the listitems variable
- var listitems = "";
- //get the car list holder ul
- var listholder = document.getElementById("carlist");
 
- //clear cars list ul
- listholder.innerHTML = "";
 
- var i;
- //Iterate through the results
- for (i = 0; i < results.rows.length; i++) {
- //Get the current row
- var row = results.rows.item(i);
 
- listholder.innerHTML += "<li>" + row.make + " - " + row.model + " (<a href='javascript:void(0);' onclick='deleteCar(" + row.id + ");'>Delete Car</a>)";
- }
-
- }
-
- //function to get the list of cars from the database
-
- function outputCars() {
- //check to ensure the mydb object has been created
- if (mydb) {
- //Get all the cars from the database with a select statement, set outputCarList as the callback function for the executeSql command
- mydb.transaction(function (t) {
- t.executeSql("SELECT * FROM cars", [], updateCarList);
- });
- } else {
- alert("db not found, your browser does not support web sql!");
- }
- }
- */
-//function to add the car to the database
-
-function addCar(url) {
+function addUrl(url) {
     //check to ensure the mydb object has been created
     if (mydb) {
         //Insert the user entered details into the cars table, note the use of the ? placeholder, these will replaced by the data passed in as an array as the second parameter
         mydb.transaction(function (t) {
-            t.executeSql("INSERT INTO track (Web,time) VALUES (?,?)", [url,new Date().toDateString()]);
-            //outputCars();
-        });
+            t.executeSql("INSERT INTO tracks (url,start,end,timer,tabsCount) VALUES (?,?,?,?,?)", [url,new Date().getTime(),new Date().getTime(),0,1]);
+            console.log("addUrl-SUCCESS");    
+    });
     } else {
         alert("db not found, your browser does not support web sql!");
     }
 }
 
-/*
- //function to remove a car from the database, passed the row id as it's only parameter
+function updateUrl(rUrl) {
 
- function deleteCar(id) {
- //check to ensure the mydb object has been created
- if (mydb) {
- //Get all the cars from the database with a select statement, set outputCarList as the callback function for the executeSql command
- mydb.transaction(function (t) {
- t.executeSql("DELETE FROM cars WHERE id=?", [id], outputCars);
- });
- } else {
- alert("db not found, your browser does not support web sql!");
- }
- }
- */
+    if (mydb) {
+        //Insert the user entered details into the cars table, note the use of the ? placeholder, these will replaced by the data passed in as an array as the second parameter
+        mydb.transaction(function (t) {
+            var now = new Date().getTime();
+            t.executeSql("UPDATE tracks SET end = ?, tabsCount = ? WHERE url = ?",[now,0,rUrl]);
+        console.log("updateUrl-SUCCESS");
+        });
+    } else {
+        alert("db not found, your browser does not support web sql!");
+    }
+    
+}
+
 
 
 
 chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
     switch(request.type) {
         case "dom-loaded":
-            addCar(request.data.myProperty);
+            console.log("dom-loaded");
+            addUrl(request.data.myProperty);
+            break;
+        case "dom-unloaded":
+            console.log("dom-unloaded");
+            updateUrl(request.data.myProperty);
             break;
     }
     return true;
 });
+
