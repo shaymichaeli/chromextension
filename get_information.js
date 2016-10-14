@@ -4,8 +4,11 @@
 
 var url = document.location.hostname;
 
+/******
+ * sending a message from the content scripts to the background whenever a new page was loaded
+ */
 window.addEventListener("load", function() {
-      console.log("load");
+    console.log("load");
     chrome.extension.sendMessage({
         type: "dom-loaded",
         data: {
@@ -14,6 +17,10 @@ window.addEventListener("load", function() {
     });
 }, true);
 
+/******
+ * sending a message from the content scripts to the background whenever a new page was un-loaded
+ *           (not sure if needed)
+ */
 window.addEventListener("beforeunload", function() {
     console.log("beforeunload");
     chrome.extension.sendMessage({
@@ -23,9 +30,3 @@ window.addEventListener("beforeunload", function() {
         }
     });
 }, true);
-
-
-
-
-
-
