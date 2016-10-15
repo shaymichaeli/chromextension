@@ -2,6 +2,96 @@
  * Created by shay on 03/10/2016.
  */
 
+//Global vars
+var records = [];
+const LAST_INDEX = -1;
+const MILLISECOND = 1000;
+var columns = ["ID","Color","Web","Time spent"];
+var colors = ["rgba(26, 188, 156,1.0)","rgba(46, 204, 113,1.0)","rgba(52, 152, 219,1.0)", 
+              "rgba(155, 89, 182,1.0)","rgba(52, 73, 94,1.0)","rgba(241, 196, 15,1.0)",
+              "rgba(230, 126, 34,1.0)","rgba(231, 76, 60,1.0)","rgba(236, 240, 241,1.0)",
+              "rgba(149, 165, 166,1.0)","#e91e63","#795548"
+            ]; 
+//turquoise,emerald,blue,purple,dark grey,yellow,orange,red,clouds,light grey,pink.
+
+/**
+ * Variables of data table, and pie canvas. 
+ */
+var canvas = document.getElementById("pieCanvas");
+var ctx = canvas.getContext("2d");
+var table = document.getElementById("dataTable");
+
+
+function createTableHead(table, columns)
+{
+    var nOfCol = columns.length;
+    var header = table.createTHead();
+    var tr = header.insertRow(0);
+    for(var i =0;i<nOfCol;i++)
+    {
+        var cell = document.createElement("TH");
+        cell.innerHTML = columns[i];
+        tr.appendChild(cell);
+    }
+}
+
+function createTableBody(table, data)
+{
+    var nOfRows = data.length;
+    //console.log(nOfRows);
+    var properties = Object.getOwnPropertyNames(data[0]);
+    properties.unshift("ID","color");
+    var nOfCols = properties.length;
+    for(var i =0;i<nOfRows;i++)
+    {
+        var tr = table.insertRow(LAST_INDEX);
+        data[i].color = colors[i];
+        data[i].timer /= MILLISECOND;
+        for(var j=0;j<nOfCols;j++)
+        {
+            if(0 == j)
+            {
+                 tr.insertCell(LAST_INDEX).innerHTML = (i+1);
+                 continue;
+            } ;
+            if(1 == j)
+            {
+                var td = tr.insertCell(LAST_INDEX);
+                td.innerHTML = "&#9632";
+                td.style.color = data[i]["color"];
+                continue;   
+            }
+            tr.insertCell(LAST_INDEX).innerHTML = data[i][properties[j]];
+        }
+    }
+}
+
+
+function drawDataPie(canvas,data)
+{
+    var lastend = 0;
+    var myTotal = 0; 
+
+    for (var e = 0; e < data.length; e++)
+    {
+        myTotal += data[e]["timer"];
+    }
+    for (var i = 0; i < data.length; i++) 
+    {
+        ctx.fillStyle = data[i]["color"];
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, canvas.height / 2);
+        // Arc Parameters: x, y, radius, startingAngle (radians), endingAngle (radians), antiClockwise (boolean)
+        ctx.arc(canvas.width / 2, canvas.height / 2, canvas.height / 2, lastend, lastend + (Math.PI * 2 * (data[i]["timer"] / myTotal)), false);
+        //ctx.lineTo(0, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height / 2);
+        ctx.fill();
+        lastend += Math.PI * 2 * (data[i]["timer"] / myTotal);
+    }
+}
+
+
+
 
 //Test for browser compatibility
 if (window.openDatabase) {
@@ -87,6 +177,37 @@ function addUrl(url) {
 }
 
 
+
+/******
+ * Retrieving all records from database and pushes every record as an object to 
+ * the global 'records' array variable, then executing a callback function.
+ * (Limit to number of records and offset feature still isnt included.)
+ * @param limit - limits the number of records returned by sql.
+ * @param offset - sets the initial id to retrieve records from.
+ * @param callback - the function to execute, after data retrieval is done.
+ */
+function retrieveData(limit,offset,callback)
+{
+    mydb.transaction(function (tx) 
+    {
+         tx.executeSql('SELECT url,timer FROM tracks1',[],function(tx,results)
+         {
+             var nOfRec = results.rows.length;
+             for(var i = 0 ; i < nOfRec ; i ++)
+             {
+                records.push(results.rows[i]) ;
+             }  
+             callback();         
+         });
+    });
+
+}
+
+
+
+
+
+
 /******
  * execute the changeTab.js script inside the active Tab!
  * see changeTab.js for details
@@ -110,4 +231,17 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
     }
     return true;
 });
+
+
+
+
+createTableHead(table,columns);
+retrieveData(null,null, function(){
+createTableBody(table,records);
+drawDataPie(canvas,records);
+});
+
+
+
+
 
